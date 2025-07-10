@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional 
 import datetime
 import typer
 from pathlib import Path
@@ -22,6 +22,7 @@ from rich.rule import Rule
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
+from tradingagents.agents.utils.agent_states import AgentState
 from cli.models import AnalystType
 from cli.utils import *
 
@@ -340,7 +341,10 @@ def update_display(layout, spinner_text=None):
 
     # Add a footer to indicate if messages were truncated
     if len(all_messages) > max_messages:
-        messages_table.footer = (
+        # Create a footer row instead of setting footer property
+        messages_table.add_row(
+            "", 
+            "", 
             f"[dim]Showing last {max_messages} of {len(all_messages)} messages[/dim]"
         )
 
@@ -764,8 +768,13 @@ def run_analysis():
             func(*args, **kwargs)
             timestamp, message_type, content = obj.messages[-1]
             content = content.replace("\n", " ")  # Replace newlines with spaces
-            with open(log_file, "a") as f:
-                f.write(f"{timestamp} [{message_type}] {content}\n")
+            try:
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(f"{timestamp} [{message_type}] {content}\n")
+            except UnicodeEncodeError:
+                # Fallback: encode with error handling
+                with open(log_file, "a", encoding="utf-8", errors="replace") as f:
+                    f.write(f"{timestamp} [{message_type}] {content}\n")
         return wrapper
     
     def save_tool_call_decorator(obj, func_name):
@@ -775,8 +784,13 @@ def run_analysis():
             func(*args, **kwargs)
             timestamp, tool_name, args = obj.tool_calls[-1]
             args_str = ", ".join(f"{k}={v}" for k, v in args.items())
-            with open(log_file, "a") as f:
-                f.write(f"{timestamp} [Tool Call] {tool_name}({args_str})\n")
+            try:
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(f"{timestamp} [Tool Call] {tool_name}({args_str})\n")
+            except UnicodeEncodeError:
+                # Fallback: encode with error handling
+                with open(log_file, "a", encoding="utf-8", errors="replace") as f:
+                    f.write(f"{timestamp} [Tool Call] {tool_name}({args_str})\n")
         return wrapper
 
     def save_report_section_decorator(obj, func_name):
@@ -843,7 +857,7 @@ def run_analysis():
 
         # Stream the analysis
         trace = []
-        for chunk in graph.graph.stream(init_agent_state, **args):
+        for chunk in graph.graph.stream(AgentState(**init_agent_state), **args):
             if len(chunk["messages"]) > 0:
                 # Get the last message from the chunk
                 last_message = chunk["messages"][-1]

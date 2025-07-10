@@ -1,91 +1,212 @@
-<p align="center">
-  <img src="assets/TauricResearch.png" style="width: 60%; height: auto;">
-</p>
 
-<div align="center" style="line-height: 1;">
-  <a href="https://arxiv.org/abs/2412.20138" target="_blank"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2412.20138-B31B1B?logo=arxiv"/></a>
-  <a href="https://discord.com/invite/hk9PGKShPK" target="_blank"><img alt="Discord" src="https://img.shields.io/badge/Discord-TradingResearch-7289da?logo=discord&logoColor=white&color=7289da"/></a>
-  <a href="./assets/wechat.png" target="_blank"><img alt="WeChat" src="https://img.shields.io/badge/WeChat-TauricResearch-brightgreen?logo=wechat&logoColor=white"/></a>
-  <a href="https://x.com/TauricResearch" target="_blank"><img alt="X Follow" src="https://img.shields.io/badge/X-TauricResearch-white?logo=x&logoColor=white"/></a>
-  <br>
-  <a href="https://github.com/TauricResearch/" target="_blank"><img alt="Community" src="https://img.shields.io/badge/Join_GitHub_Community-TauricResearch-14C290?logo=discourse"/></a>
-</div>
+## TradingAgents 程序运行机制分析
 
-<div align="center">
-  <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=de">Deutsch</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=es">Español</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=fr">français</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=ja">日本語</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=ko">한국어</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=pt">Português</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=ru">Русский</a> | 
-  <a href="https://www.readme-i18n.com/TauricResearch/TradingAgents?lang=zh">中文</a>
-</div>
+### 📁 项目目录结构
 
----
+```
+TradingAgents/
+├── main.py                    # 主入口文件（简单版本）
+├── pyproject.toml            # 项目配置和依赖
+├── requirements.txt           # 依赖列表
+├── README.md                 # 项目说明
+├── tradingagents/            # 核心模块
+│   ├── __init__.py
+│   ├── default_config.py     # 默认配置
+│   ├── agents/               # 智能体模块
+│   │   ├── analysts/         # 分析师团队
+│   │   │   ├── market_analyst.py
+│   │   │   ├── social_media_analyst.py
+│   │   │   ├── news_analyst.py
+│   │   │   └── fundamentals_analyst.py
+│   │   ├── researchers/      # 研究团队
+│   │   │   ├── bull_researcher.py
+│   │   │   └── bear_researcher.py
+│   │   ├── managers/         # 管理团队
+│   │   │   ├── research_manager.py
+│   │   │   └── risk_manager.py
+│   │   ├── trader/           # 交易团队
+│   │   │   └── trader.py
+│   │   └── risk_mgmt/        # 风险管理团队
+│   │       ├── aggresive_debator.py
+│   │       ├── conservative_debator.py
+│   │       └── neutral_debator.py
+│   ├── graph/                # 图执行引擎
+│   │   ├── trading_graph.py  # 主图类
+│   │   ├── setup.py          # 图设置
+│   │   ├── propagation.py    # 传播逻辑
+│   │   ├── conditional_logic.py
+│   │   ├── reflection.py     # 反思机制
+│   │   └── signal_processing.py
+│   └── dataflows/            # 数据流处理
+├── cli/                      # 命令行界面
+│   ├── main.py              # CLI主入口（你当前查看的文件）
+│   ├── utils.py             # 用户交互工具
+│   ├── models.py            # 数据模型
+│   └── static/              # 静态资源
+│       └── welcome.txt      # 欢迎信息
+└── results/                 # 结果输出目录
+```
 
-# TradingAgents: Multi-Agents LLM Financial Trading Framework 
+### 程序运行流程
 
-> 🎉 **TradingAgents** officially released! We have received numerous inquiries about the work, and we would like to express our thanks for the enthusiasm in our community.
->
-> So we decided to fully open-source the framework. Looking forward to building impactful projects with you!
+#### 1. **入口点**
+- **CLI模式**: `python -m cli.main analyze` 或直接运行 `cli/main.py`
+- **简单模式**: 运行根目录的 `main.py`
 
-<div align="center">
-<a href="https://www.star-history.com/#TauricResearch/TradingAgents&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=TauricResearch/TradingAgents&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=TauricResearch/TradingAgents&type=Date" />
-   <img alt="TradingAgents Star History" src="https://api.star-history.com/svg?repos=TauricResearch/TradingAgents&type=Date" style="width: 80%; height: auto;" />
- </picture>
-</a>
-</div>
+#### 2. **初始化阶段**
+```python
+# 1. 获取用户配置
+selections = get_user_selections()  # 交互式获取用户选择
 
-<div align="center">
+# 2. 创建配置
+config = DEFAULT_CONFIG.copy()
+config["max_debate_rounds"] = selections["research_depth"]
+config["quick_think_llm"] = selections["shallow_thinker"]
+config["deep_think_llm"] = selections["deep_thinker"]
 
-🚀 [TradingAgents](#tradingagents-framework) | ⚡ [Installation & CLI](#installation-and-cli) | 🎬 [Demo](https://www.youtube.com/watch?v=90gr5lwjIho) | 📦 [Package Usage](#tradingagents-package) | 🤝 [Contributing](#contributing) | 📄 [Citation](#citation)
+# 3. 初始化图
+graph = TradingAgentsGraph(
+    [analyst.value for analyst in selections["analysts"]], 
+    config=config, 
+    debug=True
+)
+```
 
-</div>
+#### 3. **多智能体架构**
 
-## TradingAgents Framework
+**团队结构**:
+- **分析师团队** (Analyst Team): 市场、社交、新闻、基本面分析
+- **研究团队** (Research Team): 多头研究员、空头研究员、研究经理
+- **交易团队** (Trading Team): 交易员
+- **风险管理团队** (Risk Management): 激进、保守、中性分析师
+- **投资组合管理团队** (Portfolio Management): 投资组合经理
 
-TradingAgents is a multi-agent trading framework that mirrors the dynamics of real-world trading firms. By deploying specialized LLM-powered agents: from fundamental analysts, sentiment experts, and technical analysts, to trader, risk management team, the platform collaboratively evaluates market conditions and informs trading decisions. Moreover, these agents engage in dynamic discussions to pinpoint the optimal strategy.
+#### 4. **执行流程**
+
+```python
+# 1. 创建初始状态
+init_agent_state = graph.propagator.create_initial_state(
+    selections["ticker"], selections["analysis_date"]
+)
+
+# 2. 流式执行图
+for chunk in graph.graph.stream(init_agent_state, **args):
+    # 实时更新UI显示
+    update_display(layout)
+    
+    # 处理消息和工具调用
+    if len(chunk["messages"]) > 0:
+        last_message = chunk["messages"][-1]
+        message_buffer.add_message(msg_type, content)
+        
+        # 更新报告和状态
+        if "market_report" in chunk:
+            message_buffer.update_report_section("market_report", chunk["market_report"])
+            message_buffer.update_agent_status("Market Analyst", "completed")
+```
+
+#### 5. **实时UI更新机制**
+
+**MessageBuffer类**:
+- 存储最近的消息和工具调用
+- 管理代理状态（pending/in_progress/completed/error）
+- 更新报告章节
+- 维护最终报告
+
+**Rich UI布局**:
+```python
+layout = Layout()
+layout.split_column(
+    Layout(name="header", size=3),      # 欢迎信息
+    Layout(name="main"),                # 主要内容
+    Layout(name="footer", size=3),      # 统计信息
+)
+layout["main"].split_column(
+    Layout(name="upper", ratio=3),      # 进度和消息
+    Layout(name="analysis", ratio=5),   # 分析报告
+)
+```
+
+#### 6. **数据流和工具调用**
+
+**工具节点**:
+- `market`: YFinance数据、技术指标
+- `social`: 股票新闻、Reddit信息
+- `news`: 全球新闻、Google新闻
+- `fundamentals`: 基本面数据、财务报表
+
+**LLM提供商支持**:
+- OpenAI (GPT-4o, o4-mini等)
+- Anthropic (Claude系列)
+- Google (Gemini系列)
+- OpenRouter
+- Ollama (本地模型)
+
+#### 7. **决策流程**
+
+1. **分析师团队** → 收集市场数据、情感、新闻、基本面
+2. **研究团队** → 多头/空头辩论 → 研究经理决策
+3. **交易团队** → 制定交易计划
+4. **风险管理团队** → 风险评估辩论 → 投资组合经理最终决策
+
+#### 8. **输出和存储**
+
+- **实时显示**: Rich库提供的富文本终端界面
+- **日志文件**: `results/{ticker}/{date}/message_tool.log`
+- **报告文件**: `results/{ticker}/{date}/reports/`
+- **状态记录**: JSON格式的完整状态记录
+
+### 🎯 核心特点
+
+1. **多智能体协作**: 5个专业团队协同工作
+2. **实时可视化**: Rich库提供美观的终端界面
+3. **流式处理**: 实时显示分析进度和结果
+4. **模块化设计**: 每个智能体独立可配置
+5. **多LLM支持**: 支持多种大语言模型提供商
+6. **记忆机制**: 智能体具有记忆和学习能力
+
+这个系统本质上是一个基于LangGraph的多智能体金融分析框架，通过模拟专业投资团队的工作流程来进行股票分析和交易决策。
+
+
+
+## Introduction:
+TradingAgents 是一个多智能体交易框架，模拟了真实世界交易公司的运作方式。通过部署由大语言模型（LLM）驱动的专业智能体——包括基本面分析师、情绪分析师、技术分析师、交易员和风险管理团队——平台能够协作评估市场状况并辅助交易决策。此外，这些智能体还会进行动态讨论，以确定最优策略。
 
 <p align="center">
   <img src="assets/schema.png" style="width: 100%; height: auto;">
 </p>
 
-> TradingAgents framework is designed for research purposes. Trading performance may vary based on many factors, including the chosen backbone language models, model temperature, trading periods, the quality of data, and other non-deterministic factors. [It is not intended as financial, investment, or trading advice.](https://tauric.ai/disclaimer/)
+> TradingAgents 框架主要用于学术研究。交易表现会受到多种因素影响，包括所选用的基础语言模型、模型温度、交易周期、数据质量以及其他非确定性因素。[本框架不构成任何金融、投资或交易建议。](https://tauric.ai/disclaimer/)
 
-Our framework decomposes complex trading tasks into specialized roles. This ensures the system achieves a robust, scalable approach to market analysis and decision-making.
+我们的框架将复杂的交易任务分解为多个专业角色，从而实现了对市场分析和决策的高效、可扩展处理。
 
-### Analyst Team
-- Fundamentals Analyst: Evaluates company financials and performance metrics, identifying intrinsic values and potential red flags.
-- Sentiment Analyst: Analyzes social media and public sentiment using sentiment scoring algorithms to gauge short-term market mood.
-- News Analyst: Monitors global news and macroeconomic indicators, interpreting the impact of events on market conditions.
-- Technical Analyst: Utilizes technical indicators (like MACD and RSI) to detect trading patterns and forecast price movements.
+### 分析师团队
+- 基本面分析师：评估公司财务和业绩指标，识别内在价值和潜在风险信号。
+- 情绪分析师：利用情绪评分算法分析社交媒体和公众情绪，判断短期市场情绪。
+- 新闻分析师：监控全球新闻和宏观经济指标，解读事件对市场的影响。
+- 技术分析师：利用技术指标（如 MACD 和 RSI）识别交易模式并预测价格走势。
 
 <p align="center">
   <img src="assets/analyst.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
 
-### Researcher Team
-- Comprises both bullish and bearish researchers who critically assess the insights provided by the Analyst Team. Through structured debates, they balance potential gains against inherent risks.
+### 研究员团队
+- 由多头和空头研究员组成，批判性地评估分析师团队提供的见解。通过结构化辩论，平衡潜在收益与内在风险。
 
 <p align="center">
   <img src="assets/researcher.png" width="70%" style="display: inline-block; margin: 0 2%;">
 </p>
 
-### Trader Agent
-- Composes reports from the analysts and researchers to make informed trading decisions. It determines the timing and magnitude of trades based on comprehensive market insights.
+### 交易智能体
+- 汇总分析师和研究员的报告，做出明智的交易决策。根据全面的市场洞察，决定交易的时机和规模。
 
 <p align="center">
   <img src="assets/trader.png" width="70%" style="display: inline-block; margin: 0 2%;">
 </p>
 
-### Risk Management and Portfolio Manager
-- Continuously evaluates portfolio risk by assessing market volatility, liquidity, and other risk factors. The risk management team evaluates and adjusts trading strategies, providing assessment reports to the Portfolio Manager for final decision.
-- The Portfolio Manager approves/rejects the transaction proposal. If approved, the order will be sent to the simulated exchange and executed.
+### 风险管理与投资组合经理
+- 持续评估投资组合风险，包括市场波动性、流动性等因素。风险管理团队会评估并调整交易策略，向投资组合经理提供评估报告以供最终决策。
+- 投资组合经理负责批准或拒绝交易提案。若获批准，订单将被发送至模拟交易所并执行。
 
 <p align="center">
   <img src="assets/risk.png" width="70%" style="display: inline-block; margin: 0 2%;">
@@ -192,22 +313,3 @@ print(decision)
 
 You can view the full list of configurations in `tradingagents/default_config.py`.
 
-## Contributing
-
-We welcome contributions from the community! Whether it's fixing a bug, improving documentation, or suggesting a new feature, your input helps make this project better. If you are interested in this line of research, please consider joining our open-source financial AI research community [Tauric Research](https://tauric.ai/).
-
-## Citation
-
-Please reference our work if you find *TradingAgents* provides you with some help :)
-
-```
-@misc{xiao2025tradingagentsmultiagentsllmfinancial,
-      title={TradingAgents: Multi-Agents LLM Financial Trading Framework}, 
-      author={Yijia Xiao and Edward Sun and Di Luo and Wei Wang},
-      year={2025},
-      eprint={2412.20138},
-      archivePrefix={arXiv},
-      primaryClass={q-fin.TR},
-      url={https://arxiv.org/abs/2412.20138}, 
-}
-```
